@@ -1,0 +1,55 @@
+# Concourse pipeline: test -> build-image
+# Load it with:
+#   fly -t local set-pipeline -p demo -c pipeline.yml -v github_user=<YOUR-GITHUB-USERNAME>
+
+resources:
+  - name: repo
+    type: git
+    icon: github
+    check_every: 30s
+    source:
+      uri: https://github.com/((github_user))/concourse-ci-demo.git
+      branch: main
+
+jobs:
+  - name: test
+    plan:
+      - get: repo
+        trigger: true
+      - task: run-tests
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: node
+              tag: 20-alpine
+          inputs:
+            - name: repo
+          run:
+            path: sh
+            args:
+              - -c
+              - cd repo && npm test
+
+  - name: build-image
+    plan:
+      - get: repo
+        trigger: true
+        passed: [test]
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+          inputs:
+            - name: repo
+          outputs:
+            - name: image
+          params:
+            CONTEXT: repo
+          run:
+            path: build

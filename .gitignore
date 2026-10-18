@@ -1,0 +1,4 @@
+node_modules/
+concourse-runtime/
+fly.exe
+fly

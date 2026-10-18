@@ -1,0 +1,5 @@
+node_modules
+.git
+concourse-runtime
+scripts
+*.md
